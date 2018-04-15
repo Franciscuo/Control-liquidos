@@ -98,7 +98,7 @@ Control_Liquidos.obj.s19: $(BBL_SRCS) $(EXECUTABLES)
 
 # Other Targets
 clean:
-	-$(RM) $(S_DEPS_QUOTED) "./*/*.d"  $(BURNER_OUTPUT_OUTPUTS_QUOTED) $(ASM_UPPER_DEPS_QUOTED) "./*/*.obj"  $(EXECUTABLES_QUOTED) $(S_UPPER_DEPS_QUOTED) $(ProjDirPath)/FLASH/Control_Liquidos.obj
+	-$(RM) $(S_DEPS_QUOTED) "./*/*.d"  $(BURNER_OUTPUT_OUTPUTS_QUOTED) $(ASM_UPPER_DEPS_QUOTED) "./*/*.obj"  $(EXECUTABLES_QUOTED) $(S_UPPER_DEPS_QUOTED) $(ProjDirPath)/FLASH/Control_Liquidos.obj $(ProjDirPath)/FLASH/Control_Liquidos.args $(ProjDirPath)/FLASH/Control_Liquidos.obj.args $(ProjDirPath)/FLASH/Control_Liquidos.obj.s19 $(ProjDirPath)/FLASH/Control_Liquidos.sx
 	-@echo ' '
 
 .PHONY: all clean dependents explicit-dependencies warning-messages

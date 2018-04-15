@@ -1,19 +1,5 @@
-;*******************************************************************
-;* This stationery serves as the framework for a user application. *
-;* For a more comprehensive program that demonstrates the more     *
-;* advanced functionality of this processor, please see the        *
-;* demonstration applications, located in the examples             *
-;* subdirectory of the "Freescale CodeWarrior for HC08" program    *
-;* directory.                                                      *
-;*******************************************************************
 
-; Include derivative-specific definitions
-            INCLUDE 'derivative.inc'
-; Note: This file is recreated by the project wizard whenever the MCU is
-;       changed and should not be edited by hand
-
-; include derivative specific macros
-            INCLUDE 'MC9S08JM16.inc'
+    INCLUDE 'MC9S08JM16.INC' 
 ; Based on CPU DB MC9S08JM16_48, version 3.00.048 (RegistersPrg V2.32)
 
 ; ###################################################################
@@ -3253,74 +3239,148 @@ mPageErase:         equ     $40
         ENDIF
 
 ; EOF
+	
+KBIE	EQU	1
+KBACK	EQU	2
+KMOD    EQU 0
+CLK		EQU 0		
+RESET   EQU 1
+LOCK	EQU	6	
+RS		EQU	0		
+ENABLE	EQU	1		
 
-
-; RAM/ROM definitions
-
-
-; Watchdog feed macro
-feed_watchdog: MACRO
-            PSHA
-            LDA #$55
-            STA SRS
-            COMA
-            STA SRS
-            PULA
-
-          ENDM
-            
-;
-; export symbols
-;
-            XDEF _Startup
-            ABSENTRY _Startup
-
-;
-; variable/data section
-;
-            ORG    RAMStart         ; Insert your data definition here
-ExampleVar: DS.B   1
-
-;
-; code section
-;
-            ORG    ROMStart
-            
-
-_Startup:
-            LDHX   #RAMEnd+1        ; initialize the stack pointer
-            TXS
-            CLI			; enable interrupts
-
-mainLoop:
-            ; Insert your code here
-            NOP
-
-            feed_watchdog
-            PSHA
-            LDA #$55
-            STA SRS
-            COMA
-            STA SRS
-            PULA
-
-            BRA    mainLoop
+		ORG 	0B0H  ;Direccion de RAM  (Variables)
 			
-;**************************************************************
-;* spurious - Spurious Interrupt Service Routine.             *
-;*             (unwanted interrupt)                           *
-;**************************************************************
 
-spurious:				; placed here so that security value
-			NOP			; does not change all the time.
-			RTI
 
-;**************************************************************
-;*                 Interrupt Vectors                          *
-;**************************************************************
+		ORG		0C000H; Direccion de RAM  (Memoria para programa)
 
-            ORG	$FFFA
+INICIO: CLRA
+		STA		SOPT1
+		LDHX	#4B0H
+		TXS
+		MOV     #0AAH,MCGTRM
+		MOV     #00000110B,MCGC1
+		BRCLR	LOCK,	MCGSC,	*
+		MOV		#33H,	PTFDD	  ;Configuramos los pines F0,F1,F4,F5	como salidas	
+		MOV		#0FH,	PTBDD     ;Configuramos los pines B0,B1,B2,B3	como salidas
+		MOV		#03H,	PTCDD	  ;Configuracion del reloj del contador	
+		MOV		#00010110B, IRQSC 
+		MOV		#0H,PTGDD;
+		LDA		#0FH			 	;HABILITAR RESISTENCIAS DE PULL UP G2-G3
+		STA		PTGPE				;MODIFICA REGISTRO	
+		MOV		#11000011B,KBIPE	;HABILITAR INTERRUPCIONES DE PUERTOS
+		BSET	KBACK, KBISC
+		BSET	KBIE,  KBISC
+		MOV     #0H,KBIES
+		CLI
+		
+		
+		;------------------CONFIGURACION LCD--------------------------------------------
+CON_LCD:LDHX	#50000D
+		JSR		TIEMPO		
+		MOV		#0FFH,	PTEDD			;Configuramos el puerto E todo como salidas
+		MOV		#3H,PTDDD			;Configuramos bits 0 y 1 del puerto D como salidas
+		BCLR	ENABLE,	PTDD				;Mandamos el bit 1 del registro D a 0
+		MOV 	#00111000B,	PTED			;Enviamos el comando para colocar bus a 8 BITS, las 2 lineas habilitadas y matriz de 5x7 en cada cuadro
+		JSR		COMANDO					;Saltamos a sub rutina para enviar el comando
+		MOV		#00000110B,	PTED			;Enviamos el comando para escribir de izquierda a derecha y display estático
+		JSR		COMANDO					;Saltamos a sub turtina para enviar el comando
+		MOV		#00001100B,	PTED			;Enviamos el comando para encender el display, apagar el cursor y mantener el cursor estático
+		JSR		COMANDO					;Saltamos a sub rutina para enviar el comando
+		MOV 	#00000001B,	PTED			;Enviamos el comando para borrar el display
+		JSR		COMANDO
+		LDHX	#20000D
+		JSR		TIEMPO
+		MOV		#10000000B,	PTED			;Enviamos comando para mover el cursor a la posición 2 en la línea 1
+		JSR		COMANDO
+		LDHX	#0H
 
-			DC.W  spurious			;
-			DC.W  spurious			; SWI
-			DC.W  _Startup			; Reset
+LINEA1: LDA 	TABLAF1,X
+		CBEQA	#0FFH,CONLIN2
+		STA		PTED
+		JSR		DATOLCD
+		AIX 	#1H
+		JMP		LINEA1
+CONLIN2:MOV		#11000000B,PTED			; ENVIAMOS COMANDO PARA MVER EL CURSOR EN LA POSICION 2 DE LA LINEA 2
+		JSR     COMANDO
+		LDHX 	#20000D
+		JSR     TIEMPO
+LINEA2:	LDA 	TABLAF2,X               ; Se preguntan por datos de la tabla
+		CBEQA	#0FFH,EXITLCD
+		STA		PTED
+		JSR		DATOLCD
+		AIX 	#1H
+		JMP		LINEA2; 
+EXITLCD:		
+
+;-------------------INTERRUPCION IRQ------------------------------------		
+INT_IRQ:
+		JMP     SAL_IRQ
+		
+SAL_IRQ:LDHX	#50000D
+		JSR	    TIEMPO
+		BSET    2,IRQSC
+		RTI
+;-------------------INTERRUPCION KBI------------------------------------		
+INT_KBI:LDA 	PTGD
+		AND 	#0FH
+		CBEQA   #0EH,IZQ
+		CBEQA 	#0DH,DER
+		CBEQA   #0BH,ROT
+		CBEQA   #07H,CAER
+SALIR:  BSET	KBACK,KBISC
+		RTI
+		
+IZQ:
+		JMP     SALIR	
+		
+CAER:  
+		JMP     SALIR
+
+DER:
+		JMP     SALIR
+		
+ROT:	
+		JMP     SALIR			
+;--------RUTINA COMANDO---------------------------------- 
+COMANDO:BCLR	RS,		PTDD				;Mandamos el bit RS del LCD al 0 para saber que vamos a enviar un comando
+		JMP		SALTOLCD					;Pasamos a hacer el pulso del enable
+DATOLCD:BSET	RS,		PTDD				;Mandamos el bit RS del LCD a 1 para saber que vamos a enviar un dato
+SALTOLCD:
+		BSET	ENABLE,	PTDD				;Mandamos el pulso en alto al bit ENABLE del LCD
+		NOP									;Con esto esperamos tiempo en alto del bit ENABLE		
+		NOP
+		NOP									;Con esto esperamos tiempo en alto del bit ENABLE		
+		NOP
+		NOP
+		NOP
+		BCLR	ENABLE,	PTDD				;Bajamos el bit a 0 y así aseguramos el pulso
+		PSHX								;Guarda datos correspondientes lo que venia antes  
+		PSHH								;para subrutina de tiempo no sobre escriba
+		LDHX	#50D
+		JSR		TIEMPO
+		PULH								;Obtiene 
+		PULX								;Datos
+		RTS
+;--------INICIO RUTINA DE TIEMPO------------------------------
+TIEMPO: AIX		#-1D         ; resta 1 a HX
+		CPHX	#0H          ; compara HX con 0
+		BNE		TIEMPO       ; Si hx es igual a 0 sigue
+		RTS                  ; retorna		
+
+		
+TABLAN: FCB  '0123456789',0FFH
+
+TABLAF1:FCB 'LVL: # BEST: ***',0FFH
+TABLAF2:FCB 'POINT: ####',0FFH
+			
+;------POSICION DE INICIO----------------------------------
+		ORG		0FFCCH
+		FDB		INT_KBI
+		
+		ORG		0FFFAH
+		FDB		INT_IRQ
+
+		ORG     0FFFEH
+		FDB		INICIO

@@ -101,10 +101,10 @@
 <stringAttribute key="org.eclipse.cdt.launch.DEBUGGER_ID" value="com.freescale.cdt.debug.cw.hc08.HC08Debugger"/>
 <booleanAttribute key="org.eclipse.cdt.launch.DEBUGGER_STOP_AT_MAIN" value="false"/>
 <stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="FLASH/Control_Liquidos.obj"/>
-<stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="Control_Liquidos"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="Control-liquidos"/>
 <stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value="toolchain.config.hcs08.absoluteAssembly.release.451559519"/>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
-<listEntry value="/Control_Liquidos"/>
+<listEntry value="/Control-liquidos"/>
 </listAttribute>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
 <listEntry value="4"/>
