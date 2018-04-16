@@ -1,0 +1,8 @@
+../Sources\main.asm:98:error:A1104 Undeclared user defined symbol: ROT
+../Sources\main.asm:99:error:A1104 Undeclared user defined symbol: CAER
+../Sources\main.asm:97:error:A1104 Undeclared user defined symbol: DER
+../Sources\main.asm:96:error:A1104 Undeclared user defined symbol: IZQ
+../Sources\main.asm:98:error:A1104 Undeclared user defined symbol: ROT
+../Sources\main.asm:99:error:A1104 Undeclared user defined symbol: CAER
+../Sources\main.asm:97:error:A1104 Undeclared user defined symbol: DER
+../Sources\main.asm:96:error:A1104 Undeclared user defined symbol: IZQ

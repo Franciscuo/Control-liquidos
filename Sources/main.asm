@@ -74,7 +74,14 @@ LINEA2:	LDA 	TABLAF2,X               ; Se preguntan por datos de la tabla
 		AIX 	#1H
 		JMP		LINEA2; 
 EXITLCD:		
-
+;-------------------PULSO-----------------------------------------
+PULSO:	BCLR	CLK,PTCD
+		LDHX	#10D         ;TIEMPO DE 10US
+		JSR		TIEMPO
+		BSET	CLK,PTCD
+		LDHX	#10D		 ;TIEMPO DE 10US
+		JSR		TIEMPO
+		BCLR	CLK,PTCD
 ;-------------------INTERRUPCION IRQ------------------------------------		
 INT_IRQ:
 		JMP     SAL_IRQ
@@ -91,19 +98,7 @@ INT_KBI:LDA 	PTGD
 		CBEQA   #0BH,ROT
 		CBEQA   #07H,CAER
 SALIR:  BSET	KBACK,KBISC
-		RTI
-		
-IZQ:
-		JMP     SALIR	
-		
-CAER:  
-		JMP     SALIR
-
-DER:
-		JMP     SALIR
-		
-ROT:	
-		JMP     SALIR			
+		RTI			
 ;--------RUTINA COMANDO---------------------------------- 
 COMANDO:BCLR	RS,		PTDD				;Mandamos el bit RS del LCD al 0 para saber que vamos a enviar un comando
 		JMP		SALTOLCD					;Pasamos a hacer el pulso del enable

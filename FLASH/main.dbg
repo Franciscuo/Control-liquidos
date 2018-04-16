@@ -3313,7 +3313,14 @@ LINEA2:	LDA 	TABLAF2,X               ; Se preguntan por datos de la tabla
 		AIX 	#1H
 		JMP		LINEA2; 
 EXITLCD:		
-
+;-------------------PULSO-----------------------------------------
+PULSO:	BCLR	CLK,PTCD
+		LDHX	#10D         ;TIEMPO DE 10US
+		JSR		TIEMPO
+		BSET	CLK,PTCD
+		LDHX	#10D		 ;TIEMPO DE 10US
+		JSR		TIEMPO
+		BCLR	CLK,PTCD
 ;-------------------INTERRUPCION IRQ------------------------------------		
 INT_IRQ:
 		JMP     SAL_IRQ
