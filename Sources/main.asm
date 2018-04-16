@@ -8,10 +8,11 @@ CLK		EQU 0
 RESET   EQU 1
 LOCK	EQU	6	
 RS		EQU	0		
-ENABLE	EQU	1		
+ENABLE	EQU	1
+TRIGER	EQU 5; triger del sensor		
 
 		ORG 	0B0H  ;Direccion de RAM  (Variables)
-			
+CONT	DS 1			
 
 
 		ORG		0C000H; Direccion de RAM  (Memoria para programa)
@@ -24,9 +25,7 @@ INICIO: CLRA
 		MOV     #00000110B,MCGC1
 		BRCLR	LOCK,	MCGSC,	*
 		MOV		#33H,	PTFDD	  ;Configuramos los pines F0,F1,F4,F5	como salidas	
-		MOV		#0FH,	PTBDD     ;Configuramos los pines B0,B1,B2,B3	como salidas
-		MOV		#03H,	PTCDD	  ;Configuracion del reloj del contador	
-		MOV		#00010110B, IRQSC 
+		MOV		#00100000B,	PTCDD	  ;Configuracion del reloj para sensor PTC5 - PIN 44	
 		MOV		#0H,PTGDD;
 		LDA		#0FH			 	;HABILITAR RESISTENCIAS DE PULL UP G2-G3
 		STA		PTGPE				;MODIFICA REGISTRO	
@@ -73,37 +72,96 @@ LINEA2:	LDA 	TABLAF2,X               ; Se preguntan por datos de la tabla
 		JSR		DATOLCD
 		AIX 	#1H
 		JMP		LINEA2; 
-EXITLCD:		
-
-;-------------------INTERRUPCION IRQ------------------------------------		
-INT_IRQ:
-		JMP     SAL_IRQ
+EXITLCD:MOV		#0H,CONT;		
+CICLO:	BClR	TRIGER,	PTCD
+		LDHX	#0AH; Carga la rutina de tiempo para 10 Microsegundos
+		JSR		TIEMPO; llama a subutina de tiempo
+		JSR		CONTEO;Llama a rutina conteo
+		BSET	TRIGER,	PTCD
+		LDHX	#0AH; Carga la rutina de tiempo para 10 Microsegundos
+		JSR		TIEMPO; llama a subutina de tiempo					
+		JMP 	CICLO;RETORNA AL WHILE INFINITO
 		
-SAL_IRQ:LDHX	#50000D
-		JSR	    TIEMPO
-		BSET    2,IRQSC
-		RTI
+		
 ;-------------------INTERRUPCION KBI------------------------------------		
 INT_KBI:LDA 	PTGD
 		AND 	#0FH
-		CBEQA   #0EH,IZQ
-		CBEQA 	#0DH,DER
-		CBEQA   #0BH,ROT
-		CBEQA   #07H,CAER
-SALIR:  BSET	KBACK,KBISC
+		CBEQA   #0EH,F1
+		CBEQA 	#0DH,F2
+		CBEQA   #0BH,F3
+		CBEQA   #07H,F4
+F1:		LDA		CONT;
+		CBEQA	#1H,F1C1;
+		CBEQA	#2H,F1C2;
+		CBEQA	#3H,F1C3;
+F1C4:	LDA		#41H;
+		JMP     KBIEXIT
+F1C3:	LDA		#33H;
+		JMP     KBIEXIT
+F1C2:	LDA		#32H;
+		JMP     KBIEXIT
+F1C1:	LDA		#31H;
+		JMP     KBIEXIT			
+F2:  	LDA		CONT;
+		CBEQA	#1H,F2C1;
+		CBEQA	#2H,F2C2;
+		CBEQA	#3H,F2C3;
+F2C4:	LDA		#42H;
+		JMP     KBIEXIT
+F2C3:	LDA		#36H;
+		JMP     KBIEXIT
+F2C2:	LDA		#35H;
+		JMP     KBIEXIT
+F2C1:	LDA		#34H;
+		JMP     KBIEXIT	
+F3:		LDA		CONT;
+		CBEQA	#1H,F3C1;
+		CBEQA	#2H,F3C2;
+		CBEQA	#3H,F3C3;
+F3C4:	LDA		#43H;
+		JMP     KBIEXIT
+F3C3:	LDA		#39H;
+		JMP     KBIEXIT
+F3C2:	LDA		#38H;
+		JMP     KBIEXIT
+F3C1:	LDA		#37H;
+		JMP     KBIEXIT			
+F4:		LDA		CONT;
+		CBEQA	#1H,F4C1;
+		CBEQA	#2H,F4C2;
+		CBEQA	#3H,F4C3;
+F4C4:	LDA		#44H;
+		JMP     KBIEXIT
+F4C3:	LDA		#23H;
+		JMP     KBIEXIT
+F4C2:	LDA		#30H;
+		JMP     KBIEXIT
+F4C1:	LDA		#2AH;
+		JMP     KBIEXIT				
+KBIEXIT:MOV		#11001110B,	PTED			 
+		JSR		COMANDO
+		STA		PTED
+		JSR		DATOLCD
+		BSET	KBACK,KBISC
 		RTI
-		
-IZQ:
-		JMP     SALIR	
-		
-CAER:  
-		JMP     SALIR
+;--------RUTINA CONTADOR--------------------------------
+CONTEO:	LDA		CONT;
+		CBEQA	#0,CONT0;
+		CBEQA	#1,CONT1;
+		CBEQA	#2,CONT2;
+CONT3:	MOV		#0H,CONT; CONT=0;
+		MOV		#00010011B,PTFD;
+		JMP		CEXIT;
+CONT2:	INC		CONT
+		MOV		#00100011B,PTFD;
+		JMP		CEXIT;
+CONT1:	INC		CONT
+		MOV		#00110001B,PTFD;
+		JMP		CEXIT;
+CONT0:	INC		CONT
+		MOV		#00110010B,PTFD;		
+CEXIT:	RTS;	
 
-DER:
-		JMP     SALIR
-		
-ROT:	
-		JMP     SALIR			
 ;--------RUTINA COMANDO---------------------------------- 
 COMANDO:BCLR	RS,		PTDD				;Mandamos el bit RS del LCD al 0 para saber que vamos a enviar un comando
 		JMP		SALTOLCD					;Pasamos a hacer el pulso del enable
@@ -132,16 +190,12 @@ TIEMPO: AIX		#-1D         ; resta 1 a HX
 
 		
 TABLAN: FCB  '0123456789',0FFH
-
-TABLAF1:FCB 'LVL: # BEST: ***',0FFH
-TABLAF2:FCB 'POINT: ####',0FFH
+TABLAF1:FCB 'NIVEL ACTUAL: 10',0FFH
+TABLAF2:FCB 'NIVEL FINAL : 10',0FFH
 			
 ;------POSICION DE INICIO----------------------------------
 		ORG		0FFCCH
 		FDB		INT_KBI
 		
-		ORG		0FFFAH
-		FDB		INT_IRQ
-
 		ORG     0FFFEH
 		FDB		INICIO
