@@ -3311,17 +3311,19 @@ LINEA2:	LDA 	TABLAF2,X               ; Se preguntan por datos de la tabla
 		JSR		DATOLCD
 		AIX 	#1H
 		JMP		LINEA2; 
+		
 EXITLCD:MOV		#0H,CONT;		
-CICLO:	BClR	TRIGER,	PTCD
-		LDHX	#0AH; Carga la rutina de tiempo para 10 Microsegundos
-		JSR		TIEMPO; llama a subutina de tiempo
+CICLO:	JSR		PULSO;
+		JMP 	CICLO;RETORNA AL WHILE INFINITO		
+;-------------------PULSO-----------------------------------------
+PULSO:	BCLR	CLK,PTCD
+		LDHX	#10D         ;TIEMPO DE 10US
+		JSR		TIEMPO
 		JSR		CONTEO;Llama a rutina conteo
-		BSET	TRIGER,	PTCD
-		LDHX	#0AH; Carga la rutina de tiempo para 10 Microsegundos
-		JSR		TIEMPO; llama a subutina de tiempo					
-		JMP 	CICLO;RETORNA AL WHILE INFINITO
-		
-		
+		BSET	TRIGER,PTCD
+		LDHX	#10D		 ;TIEMPO DE 10US
+		JSR		TIEMPO
+		RTS
 ;-------------------INTERRUPCION KBI------------------------------------		
 INT_KBI:LDA 	PTGD
 		AND 	#0FH
@@ -3399,7 +3401,7 @@ CONT1:	INC		CONT
 		JMP		CEXIT;
 CONT0:	INC		CONT
 		MOV		#00110010B,PTFD;		
-CEXIT:	RTS;	
+CEXIT:	RTS;		
 
 ;--------RUTINA COMANDO---------------------------------- 
 COMANDO:BCLR	RS,		PTDD				;Mandamos el bit RS del LCD al 0 para saber que vamos a enviar un comando
