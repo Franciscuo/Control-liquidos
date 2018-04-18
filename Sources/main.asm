@@ -10,9 +10,12 @@ LOCK	EQU	6
 RS		EQU	0		
 ENABLE	EQU	1
 TRIGER	EQU 5; triger del sensor		
-
+LRESET	EQU 3;
 		ORG 	0B0H  ;Direccion de RAM  (Variables)
-CONT	DS 1			
+CONT	DS 1	
+V_I 	DS 1
+V_F		DS 1
+T_O		DS 1		
 
 
 		ORG		0C000H; Direccion de RAM  (Memoria para programa)
@@ -25,7 +28,11 @@ INICIO: CLRA
 		MOV     #00000110B,MCGC1
 		BRCLR	LOCK,	MCGSC,	*
 		MOV		#33H,	PTFDD	  ;Configuramos los pines F0,F1,F4,F5	como salidas	
-		MOV		#00100000B,	PTCDD	  ;Configuracion del reloj para sensor PTC5 - PIN 44	
+		MOV		#00101000B,	PTCDD	  ;Configuracion del reloj para sensor PTC5 - PIN 44	
+		BSET	LRESET,PTCD;
+		LDHX 	#50000D
+		JSR     TIEMPO
+		BCLR	LRESET,PTCD;
 		MOV		#0H,PTGDD;
 		LDA		#0FH			 	;HABILITAR RESISTENCIAS DE PULL UP G2-G3
 		STA		PTGPE				;MODIFICA REGISTRO	
@@ -34,8 +41,10 @@ INICIO: CLRA
 		BSET	KBIE,  KBISC
 		MOV     #0H,KBIES
 		CLI
-		
-		
+		;------------------INICIALIZACION--------------------------
+		MOV		#0H,V_I;
+		MOV		#0H,V_F;
+		MOV		#0H,T_O;
 		;------------------CONFIGURACION LCD--------------------------------------------
 CON_LCD:LDHX	#50000D
 		JSR		TIEMPO		
@@ -71,16 +80,19 @@ LINEA2:	LDA 	TABLAF2,X               ; Se preguntan por datos de la tabla
 		STA		PTED
 		JSR		DATOLCD
 		AIX 	#1H
-		JMP		LINEA2; 
-		
+		JMP		LINEA2;
+				 
 EXITLCD:MOV		#0H,CONT;		
 CICLO:	JSR		PULSO;
-		JMP 	CICLO;RETORNA AL WHILE INFINITO		
+		JMP 	CICLO;RETORNA AL WHILE INFINITO
+		
+		
+				
 ;-------------------PULSO-----------------------------------------
-PULSO:	BCLR	CLK,PTCD
-		LDHX	#10D         ;TIEMPO DE 10US
+PULSO:	BCLR	TRIGER,PTCD
+		LDHX	#4D         ;TIEMPO DE 10US
 		JSR		TIEMPO
-		JSR		CONTEO;Llama a rutina conteo
+		;JSR		CONTEO;Llama a rutina conteo
 		BSET	TRIGER,PTCD
 		LDHX	#10D		 ;TIEMPO DE 10US
 		JSR		TIEMPO
@@ -96,55 +108,78 @@ F1:		LDA		CONT;
 		CBEQA	#1H,F1C1;
 		CBEQA	#2H,F1C2;
 		CBEQA	#3H,F1C3;
-F1C4:	LDA		#41H;
+F1C4:	;LDA	#41H;
 		JMP     KBIEXIT
-F1C3:	LDA		#33H;
+F1C3:	;LDA		#33H;
+		MOV		#33H,T_O;
+		JSR		ING_NUM;
 		JMP     KBIEXIT
-F1C2:	LDA		#32H;
+F1C2:	;LDA		#32H;
+		MOV		#32H,T_O;
+		JSR		ING_NUM;
 		JMP     KBIEXIT
-F1C1:	LDA		#31H;
+F1C1:	;LDA		#31H;
+		MOV		#31H,T_O;
+		JSR		ING_NUM;
 		JMP     KBIEXIT			
 F2:  	LDA		CONT;
 		CBEQA	#1H,F2C1;
 		CBEQA	#2H,F2C2;
 		CBEQA	#3H,F2C3;
-F2C4:	LDA		#42H;
+F2C4:	;LDA	#42H;
+		JMP    KBIEXIT
+F2C3:	;LDA		#36H;
+		MOV		#36H,T_O;
+		JSR		ING_NUM;
 		JMP     KBIEXIT
-F2C3:	LDA		#36H;
+F2C2:	;LDA		#35H;
+		MOV		#35H,T_O;
+		JSR		ING_NUM;
 		JMP     KBIEXIT
-F2C2:	LDA		#35H;
-		JMP     KBIEXIT
-F2C1:	LDA		#34H;
+F2C1:	;LDA		#34H;
+		MOV		#34H,T_O;
+		JSR		ING_NUM;
 		JMP     KBIEXIT	
 F3:		LDA		CONT;
 		CBEQA	#1H,F3C1;
 		CBEQA	#2H,F3C2;
 		CBEQA	#3H,F3C3;
-F3C4:	LDA		#43H;
+F3C4:	;LDA	#43H;
+		JSR		BORRAR;
 		JMP     KBIEXIT
-F3C3:	LDA		#39H;
+F3C3:	;LDA	#39H;
+		MOV		#39H,T_O;
+		JSR		ING_NUM;
 		JMP     KBIEXIT
-F3C2:	LDA		#38H;
+F3C2:	;LDA	#38H;
+		MOV		#38H,T_O;
+		JSR		ING_NUM;
 		JMP     KBIEXIT
-F3C1:	LDA		#37H;
+F3C1:	;LDA	#37H;
+		MOV		#37H,T_O;
+		JSR		ING_NUM;
 		JMP     KBIEXIT			
 F4:		LDA		CONT;
 		CBEQA	#1H,F4C1;
 		CBEQA	#2H,F4C2;
 		CBEQA	#3H,F4C3;
-F4C4:	LDA		#44H;
+F4C4:	;LDA	#44H;
+		JSR 	INTRO;
 		JMP     KBIEXIT
-F4C3:	LDA		#23H;
+F4C3:	;LDA	#23H;
+		JMP    KBIEXIT
+F4C2:	;LDA	#30H;
+		MOV		#30H,T_O;
+		JSR		ING_NUM;
 		JMP     KBIEXIT
-F4C2:	LDA		#30H;
-		JMP     KBIEXIT
-F4C1:	LDA		#2AH;
-		JMP     KBIEXIT				
-KBIEXIT:MOV		#11001110B,	PTED			 
-		JSR		COMANDO
-		STA		PTED
-		JSR		DATOLCD
-		BSET	KBACK,KBISC
+F4C1:	;LDA		#2AH;
+		JMP     KBIEXIT			
+KBIEXIT:JSR 	ACT_LCD;
+;		MOV		#11001110B,	PTED			 
+;		JSR		COMANDO
+;		STA		PTED
+;		JSR		DATOLCD
+		BSET	KBACK,KBISC; ELIMINA REBOTE
 		RTI
 ;--------RUTINA CONTADOR--------------------------------
 CONTEO:	LDA		CONT;
@@ -184,6 +219,52 @@ SALTOLCD:
 		PULH								;Obtiene 
 		PULX								;Datos
 		RTS
+
+ING_NUM:LDA		#10D
+		CMP 	V_I     ;A-OPR8
+		BPL 	AJ1
+		RTS
+		
+AJ1:    LDX 	V_I
+		MUL
+		ADD 	T_O
+		STA 	V_I
+		RTS
+
+INTRO:  LDA 	#25D
+		CMP 	V_I
+		BPL 	MAYOR
+		MOV 	V_F, V_I
+		RTS
+		
+MAYOR: 	MOV 	V_I, V_F
+		RTS
+		
+BORRAR: LDHX 	#10D
+		LDA 	V_I
+		DIV
+		STA		V_I
+		RTS
+		
+ACT_LCD:LDHX 	#10D
+		LDA 	V_I
+		DIV
+		ADD 	#30H
+		PSHH
+		MOV		#11001110B,PTED
+		JSR 	COMANDO
+		STA 	PTED
+		JSR 	DATOLCD
+		PULA
+		ADD		#30H
+		MOV		#11001110B,PTED
+		JSR		COMANDO
+		STA 	PTED
+		JSR 	DATOLCD
+		RTS
+		
+			
+		
 ;--------INICIO RUTINA DE TIEMPO------------------------------
 TIEMPO: AIX		#-1D         ; resta 1 a HX
 		CPHX	#0H          ; compara HX con 0
@@ -193,7 +274,7 @@ TIEMPO: AIX		#-1D         ; resta 1 a HX
 		
 TABLAN: FCB  '0123456789',0FFH
 TABLAF1:FCB 'NIVEL ACTUAL: 10',0FFH
-TABLAF2:FCB 'NIVEL FINAL : 10',0FFH
+TABLAF2:FCB 'NIVEL FINAL :   ',0FFH
 			
 ;------POSICION DE INICIO----------------------------------
 		ORG		0FFCCH
